@@ -1,1 +1,47 @@
-Read me
+This README file contains information on the contents of the meta-custom-phycore layer.
+
+Please see the corresponding sections below for details.
+
+Dependencies
+============
+
+  URI: <first dependency>
+  branch: <branch name>
+
+  URI: <second dependency>
+  branch: <branch name>
+
+  .
+  .
+  .
+
+Patches
+=======
+
+Please submit any patches against the meta-custom-phycore layer to the xxxx mailing list (xxxx@zzzz.org)
+and cc: the maintainer:
+
+Maintainer: XXX YYYYYY <xxx.yyyyyy@zzzzz.com>
+
+Table of Contents
+=================
+
+  I. Adding the meta-custom-phycore layer to your build
+ II. Misc
+
+
+I. Adding the meta-custom-phycore layer to your build
+=================================================
+repo init -u https://github.com/nxp-imx/imx-manifest -b imx-linux-nanbield -m imx-6.6.3-1.0.0.xml
+repo sync
+
+# Copy file imx8-phycore-setup-release.sh into root NXP Yocto folder
+
+DISTRO=fsl-imx-xwayland MACHINE=imx8x-phycore-kit source imx8-phycore-setup-release.sh -b build-xwayland
+
+bitbake imx-image-multimedia
+
+II. Misc
+========
+
+--- replace with specific information about the meta-custom-phycore layer ---

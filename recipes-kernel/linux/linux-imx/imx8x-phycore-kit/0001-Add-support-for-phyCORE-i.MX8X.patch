@@ -1,0 +1,2496 @@
+commit 188d4752bdd516a5c0492fa936ea85c41697593a
+Author: namlh97 <nam.lehai.1997@outlook.com>
+Date:   Wed Apr 10 18:30:18 2024 +0700
+
+    Add support for phyCORE-i.MX8X
+
+diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+index 30dd6347a929..28312af9991e 100644
+--- a/arch/arm64/boot/dts/Makefile
++++ b/arch/arm64/boot/dts/Makefile
+@@ -21,6 +21,7 @@ subdir-y += mediatek
+ subdir-y += microchip
+ subdir-y += nuvoton
+ subdir-y += nvidia
++subdir-y += phytec
+ subdir-y += qcom
+ subdir-y += realtek
+ subdir-y += renesas
+diff --git a/arch/arm64/boot/dts/phytec/Makefile b/arch/arm64/boot/dts/phytec/Makefile
+new file mode 100644
+index 000000000000..9f90edad4c71
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/Makefile
+@@ -0,0 +1,16 @@
++# SPDX-License-Identifier: GPL-2.0
++#
++# Copyright (C) 2020 PHYTEC America, LLC - https://www.phytec.com
++#
++
++DTC_FLAGS := -@
++DTC_FLAGS := -i arch/arm64/boot/dts/freescale
++
++dtb-$(CONFIG_ARCH_MXC) += phytec-imx8qxp-phycore-rdk-emmc.dtb \
++	phytec-imx8qxp-uart2.dtbo \
++	phytec-imx8qxp-parallel-camera.dtbo \
++	phytec-imx8qxp-lcd-018.dtbo \
++	phytec-imx8qxp-bt.dtbo \
++	phytec-imx8qxp-wifi.dtbo  \
++	phytec-imx8qxp-lvds0-peb-lvds-01.dtbo \
++	phytec-imx8qxp-lvds1-peb-lvds-01.dtbo
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-bt.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-bt.dtso
+new file mode 100644
+index 000000000000..9d77441da451
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-bt.dtso
+@@ -0,0 +1,26 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ * Copyright (C) 2020 PHYTEC America, LLC - https://www.phytec.com
++ *
++ * Enable Bluetooth on PCM-942
++ */
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	fragment@3 {
++		target = <&lpuart1>;
++		__overlay__ {
++			pinctrl-0 = <&pinctrl_lpuart1>, <&pinctrl_lpuart1_rtscts>;
++			uart-has-rtscts;
++		};
++	};
++
++	fragment@4 {
++		target = <&reg_bt>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lcd-018.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lcd-018.dtso
+new file mode 100644
+index 000000000000..654195768736
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lcd-018.dtso
+@@ -0,0 +1,230 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ *
++ * Enable LCD-018 LVDS displays on PCM-942
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/pinctrl/pads-imx8qxp.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	compatible = "phytec,imx8qxp-pcm-942", "phytec,imx8qxp-phycore-som", "fsl,imx8qxp";
++
++	fragment@10 {
++		target-path = "/";
++		__overlay__ {
++			lvds0_panel {
++				compatible = "edt,etm0700g0dh6";
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_lvds0>;
++				enable = <&lsio_gpio1 28 GPIO_ACTIVE_HIGH>;
++				backlight = <&lvds_backlight0>;
++
++				port {
++					panel_lvds0_in: endpoint {
++						remote-endpoint = <&lvds0_out>;
++					};
++				};
++			};
++
++			lvds1_panel {
++				compatible = "edt,etm0700g0dh6";
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_lvds1>;
++				enable = <&lsio_gpio2 0 GPIO_ACTIVE_HIGH>;
++				backlight = <&lvds_backlight1>;
++
++				port {
++					panel_lvds1_in: endpoint {
++						remote-endpoint = <&lvds1_out>;
++					};
++				};
++			};
++
++			lvds_backlight0: lvds_backlight@0 {
++				compatible = "pwm-backlight";
++				pwms = <&pwm_mipi_lvds0 0 100000 0>;
++
++				brightness-levels = < 0  1  2  3  4  5	6  7  8  9
++						     10 11 12 13 14 15 16 17 18 19
++						     20 21 22 23 24 25 26 27 28 29
++						     30 31 32 33 34 35 36 37 38 39
++						     40 41 42 43 44 45 46 47 48 49
++						     50 51 52 53 54 55 56 57 58 59
++						     60 61 62 63 64 65 66 67 68 69
++						     70 71 72 73 74 75 76 77 78 79
++						     80 81 82 83 84 85 86 87 88 89
++						     90 91 92 93 94 95 96 97 98 99
++						    100>;
++				default-brightness-level = <80>;
++			};
++
++			lvds_backlight1: lvds_backlight@1 {
++				compatible = "pwm-backlight";
++				pwms = <&pwm_mipi_lvds1 0 100000 0>;
++
++				brightness-levels = < 0  1  2  3  4  5	6  7  8  9
++						     10 11 12 13 14 15 16 17 18 19
++						     20 21 22 23 24 25 26 27 28 29
++						     30 31 32 33 34 35 36 37 38 39
++						     40 41 42 43 44 45 46 47 48 49
++						     50 51 52 53 54 55 56 57 58 59
++						     60 61 62 63 64 65 66 67 68 69
++						     70 71 72 73 74 75 76 77 78 79
++						     80 81 82 83 84 85 86 87 88 89
++						     90 91 92 93 94 95 96 97 98 99
++						    100>;
++				default-brightness-level = <80>;
++			};
++		};
++	};
++
++	fragment@11 {
++		target = <&ldb1_phy>;
++		__overlay__ { status = "okay"; };
++	};
++
++	fragment@12 {
++		target = <&ldb1>;
++		__overlay__ {
++			status = "okay";
++
++			lvds-channel@0 {
++				fsl,data-mapping = "jeida";
++				fsl,data-width = <24>;
++				status = "okay";
++
++				port@1 {
++					reg = <1>;
++
++					lvds0_out: endpoint {
++						remote-endpoint = <&panel_lvds0_in>;
++					};
++				};
++			};
++		};
++	};
++
++	fragment@13 {
++		target = <&ldb2_phy>;
++		__overlay__ { status = "okay"; };
++	};
++
++	fragment@14 {
++		target = <&ldb2>;
++		__overlay__ {
++			status = "okay";
++
++			lvds-channel@0 {
++				fsl,data-mapping = "jeida";
++				fsl,data-width = <24>;
++				status = "okay";
++
++				port@1 {
++					reg = <1>;
++
++					lvds1_out: endpoint {
++						remote-endpoint = <&panel_lvds1_in>;
++					};
++				};
++			};
++		};
++	};
++
++	fragment@15 {
++		target = <&dc0_pc>; 	/* Pixel combiner */
++		__overlay__ { status = "okay"; };
++	};
++
++	fragment@16 {
++		target = <&pwm_mipi_lvds0>;
++		__overlay__ {
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_pwm_mipi_lvds0>;
++			status = "okay";
++		};
++	};
++
++	fragment@17 {
++		target = <&pwm_mipi_lvds1>;
++		__overlay__ {
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_pwm_mipi_lvds1>;
++			status = "okay";
++		};
++	};
++
++	fragment@18 {
++		target = <&i2c0_mipi_lvds0>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "okay";
++
++			edt_ft5x06_lvds0: polytouch_0@38 {
++				compatible = "edt,edt-ft5406", "edt,edt-ft5x06";
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_edt_ft5x06_lvds0>;
++				reg = <0x38>;
++				interrupt-parent = <&lsio_gpio1>;
++				interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
++				status = "okay";
++			};
++		};
++	};
++
++	fragment@19 {
++		target = <&i2c0_mipi_lvds1>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "okay";
++
++			edt_ft5x06_lvds1: polytouch_1@38 {
++				compatible = "edt,edt-ft5406", "edt,edt-ft5x06";
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_edt_ft5x06_lvds1>;
++				reg = <0x38>;
++				interrupt-parent = <&lsio_gpio1>;
++				interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
++				status = "okay";
++			};
++		};
++	};
++
++	fragment@20 {
++	       target = <&iomuxc>;
++		__overlay__ {
++			pcm942 {
++				pinctrl_edt_ft5x06_lvds0: edt_ft5x06grp_lvds0 {
++					fsl,pins = <
++						IMX8QXP_FLEXCAN2_RX_LSIO_GPIO1_IO19	   0x06000021
++					>;
++				};
++
++				pinctrl_edt_ft5x06_lvds1: edt_ft5x06grp_lvds1 {
++					fsl,pins = <
++						IMX8QXP_SPI0_SDI_LSIO_GPIO1_IO05   0x06000021
++					>;
++				};
++
++				pinctrl_pwm_mipi_lvds0: mipi_lvds0_pwm_grp {
++					fsl,pins = <
++						IMX8QXP_MIPI_DSI0_GPIO0_00_MIPI_DSI0_PWM0_OUT	   0x00000020
++					>;
++				};
++
++				pinctrl_pwm_mipi_lvds1: mipi_lvds1_pwm_grp {
++					fsl,pins = <
++						IMX8QXP_MIPI_DSI1_GPIO0_00_MIPI_DSI1_PWM0_OUT	   0x00000020
++					>;
++				};
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lvds0-peb-lvds-01.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lvds0-peb-lvds-01.dtso
+new file mode 100644
+index 000000000000..3a3b64238f7b
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lvds0-peb-lvds-01.dtso
+@@ -0,0 +1,99 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2020-2021 PHYTEC America, LLC 
++ *
++ * Enable LVDS to HDMI Adaptor on PCM-942
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/pinctrl/pads-imx8qxp.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/display/tda998x.h>
++
++/ {
++	fragment@101 {
++		target = <&ldb1>;
++		__overlay__ {
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_lvds0>;
++			status = "okay";
++
++			lvds-channel@0 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				fsl,data-mapping = "spwg";
++				fsl,data-width = <24>;
++				status = "okay";
++
++				port@1 {
++					reg = <1>;
++
++					lvds0_output: endpoint {
++						remote-endpoint = <&tda1998x_0_input>;
++					};
++				};
++			};
++		};
++	};
++
++	fragment@102 {
++		target = <&i2c0_mipi_lvds0>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "okay";
++
++			tda998x_0: hdmi-encoder {
++				status = "okay";
++				compatible = "nxp,tda998x";
++				reg = <0x70>;
++				interrupt-parent = <&lsio_gpio1>;
++				interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
++				pinctrl-0 = <&pinctrl_hdmi_encoder_0>;
++				pinctrl-names = "default";
++				nxp,calib-gpios = <&lsio_gpio1 19 0>;
++
++				port {
++					tda1998x_0_input: endpoint {
++						remote-endpoint = <&lvds0_output>;
++					};
++				};
++			};
++		};
++	};
++
++	fragment@103 {
++		target = <&ldb1_phy>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++
++	fragment@104 {
++		target = <&dc0_pc>;	/* Pixel combiner */
++		__overlay__ {
++			status = "okay";
++		};
++	};
++
++	fragment@105 {
++		target = <&iomuxc>;
++		__overlay__ {
++			pcm942 {
++				pinctrl_lvds0: lvds0grp {
++					fsl,pins = <
++						IMX8QXP_MIPI_DSI0_GPIO0_01_LSIO_GPIO1_IO28 0x06000021
++					>;
++				};
++
++				pinctrl_hdmi_encoder_0: hdmiencoder0 {
++					fsl,pins = <
++						IMX8QXP_FLEXCAN2_RX_LSIO_GPIO1_IO19 0x06000021
++					>;
++				};
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lvds1-peb-lvds-01.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lvds1-peb-lvds-01.dtso
+new file mode 100644
+index 000000000000..13e17d8993ed
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-lvds1-peb-lvds-01.dtso
+@@ -0,0 +1,99 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2020-2021 PHYTEC America, LLC
++ *
++ * Enable LVDS to HDMI Adaptor on PCM-942
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/pinctrl/pads-imx8qxp.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/display/tda998x.h>
++
++/ {
++	fragment@106 {
++		target = <&ldb2>;
++		__overlay__ {
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_lvds1>;
++			status = "okay";
++
++			lvds-channel@0 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				fsl,data-mapping = "spwg";
++				fsl,data-width = <24>;
++				status = "okay";
++
++				port@1 {
++					reg = <1>;
++
++					lvds1_output: endpoint {
++						remote-endpoint = <&tda1998x_1_input>;
++					};
++				};
++			};
++		};
++	};
++
++	fragment@107 {
++		target = <&i2c0_mipi_lvds1>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "okay";
++
++			tda998x_1: hdmi-encoder {
++				status = "okay";
++				compatible = "nxp,tda998x";
++				reg = <0x70>;
++				interrupt-parent = <&lsio_gpio1>;
++				interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
++				pinctrl-0 = <&pinctrl_hdmi_encoder_1>;
++				pinctrl-names = "default";
++				nxp,calib-gpios = <&lsio_gpio1 5 0>;
++
++				port {
++					tda1998x_1_input: endpoint {
++						remote-endpoint = <&lvds1_output>;
++					};
++				};
++			};
++		};
++	};
++
++	fragment@108 {
++		target = <&ldb2_phy>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++
++	fragment@109 {
++		target = <&dc0_pc>;	/* Pixel combiner */
++		__overlay__ {
++			status = "okay";
++		};
++	};
++
++	fragment@110 {
++		target = <&iomuxc>;
++		__overlay__ {
++			pcm942 {
++				pinctrl_lvds1: lvds1grp {
++					fsl,pins = <
++						IMX8QXP_MIPI_DSI1_GPIO0_01_LSIO_GPIO2_IO00 0x06000021
++					>;
++				};
++
++				pinctrl_hdmi_encoder_1: hdmiencoder1 {
++						fsl,pins = <
++							IMX8QXP_SPI0_SDI_LSIO_GPIO1_IO05 0x06000021
++						>;
++				};
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-parallel-camera.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-parallel-camera.dtso
+new file mode 100644
+index 000000000000..669d01e2653d
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-parallel-camera.dtso
+@@ -0,0 +1,164 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ *
++ * Enable parallel camera on PCM-942
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/pinctrl/pads-imx8qxp.h>
++#include <dt-bindings/clock/imx8-clock.h>
++
++/ {
++	compatible = "phytec,imx8qxp-pcm-942", "phytec,imx8qxp-phycore-som", "fsl,imx8qxp";
++
++	fragment@3 {
++		target-path = "/";
++		__overlay__ {
++			reg_vcc_cam0: vcc_cam0 {
++				compatible = "regulator-fixed";
++				regulator-name = "vcc_cam0";
++				regulator-min-microvolt = <3000000>;
++				regulator-max-microvolt = <3000000>;
++				gpio = <&xio 0 GPIO_ACTIVE_HIGH>;
++				enable-active-high;
++			};
++		};
++	};
++
++	fragment@5 {
++		target = <&isi_0>;
++		__overlay__ {
++			interface = <6 0 2>;	/* INPUT:  6=ISI_INPUT_INTERFACE_PARALLEL_CSI
++						 * OUTPUT: 2=ISI_OUTPUT_INTERFACE_MEM */
++			parallel_csi;
++			status = "okay";
++
++			cap_device {
++				status = "okay";
++			};
++		};
++	};
++
++	fragment@6 {
++		target = <&cameradev>;
++		__overlay__ {
++			parallel_csi;
++			status = "okay";
++		};
++	};
++
++	fragment@7 {
++		target = <&parallel_csi>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "okay";
++			input-type = <2>;	/* actaully Bayer, but need to indicate RGB8 */
++			port@0 {
++				reg = <0>;
++				parallel_csi_ep: endpoint {
++					remote-endpoint = <&mt9p031_ep>;
++				};
++			};
++		};
++	};
++
++	fragment@8 {
++		target = <&i2c0_parallel>;
++		__overlay__ {
++			clock-frequency = <100000>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_cam0_i2c>;
++			status = "okay";
++
++			/* The sensor address depends on jumper settings */
++			mt9p031: mt9p031@48 {
++				compatible = "aptina,mt9p031m";
++				reg = <0x48>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_parallel_csi>;
++				clocks = <&pi0_misc_lpcg 0>;
++				clock-names = "xclk";
++				vaa-supply = <&reg_vcc_cam0>;
++				vdd-supply = <&reg_vcc_cam0>;
++				vdd_io-supply = <&reg_vcc_cam0>;
++				status = "okay";
++				port {
++					mt9p031_ep: endpoint {
++						input-clock-frequency = <24000000>;
++						/* pixel-clock-frequency = <24000000>; */
++						pixel-clock-frequency = <96000000>;
++						remote-endpoint = <&parallel_csi_ep>;
++						bus-type = <5>; /* V4L2_FWNODE_BUS_TYPE_PARALLEL */
++						bus-width = <8>;
++						pclk-sample = <1>;
++					};
++				};
++			};
++
++			/*
++			 * The EEPROM address depends on jumper settings, and may not be
++			 * populated on the camera
++			 */
++			cam_i2c_eeprom: eeprom@50 {
++				compatible = "atmel,24c02";
++				pagesize = <16>;
++				reg = <0x50>;
++				status = "disabled";
++			};
++		};
++	};
++
++	fragment@9 {
++	       target = <&iomuxc>;
++		__overlay__ {
++			pcm942 {
++				pinctrl_cam0_i2c: cam0_i2c_grp {
++					fsl,pins = <
++						IMX8QXP_CSI_RESET_CI_PI_I2C_SDA    0x06000020
++						IMX8QXP_CSI_EN_CI_PI_I2C_SCL	   0x06000020
++					>;
++				};
++
++				pinctrl_parallel_csi: parallelcsigrp {
++					fsl,pins = <
++						IMX8QXP_CSI_D00_CI_PI_D02	   0xC0000041
++						IMX8QXP_CSI_D01_CI_PI_D03	   0xC0000041
++						IMX8QXP_CSI_D02_CI_PI_D04	   0xC0000041
++						IMX8QXP_CSI_D03_CI_PI_D05	   0xC0000041
++						IMX8QXP_CSI_D04_CI_PI_D06	   0xC0000041
++						IMX8QXP_CSI_D05_CI_PI_D07	   0xC0000041
++						IMX8QXP_CSI_D06_CI_PI_D08	   0xC0000041
++						IMX8QXP_CSI_D07_CI_PI_D09	   0xC0000041
++
++						IMX8QXP_CSI_MCLK_CI_PI_MCLK	   0xC0000041
++						IMX8QXP_CSI_PCLK_CI_PI_PCLK	   0xC0000041
++						IMX8QXP_CSI_HSYNC_CI_PI_HSYNC	   0xC0000041
++						IMX8QXP_CSI_VSYNC_CI_PI_VSYNC	   0xC0000041
++					>;
++				};
++			};
++		};
++	};
++
++	fragment@10 {
++		target = <&irqsteer_parallel>;
++		__overlay__ { status = "okay"; };
++	};
++
++	fragment@11 {
++		target = <&jpegdec>;
++		__overlay__ { status = "okay"; };
++	};
++
++	fragment@12 {
++		target = <&jpegenc>;
++		__overlay__ { status = "okay"; };
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-pcm-942.dtsi b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-pcm-942.dtsi
+new file mode 100644
+index 000000000000..f147a1889afd
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-pcm-942.dtsi
+@@ -0,0 +1,530 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2018 PHYTEC Messtechnik GmbH
++ *
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ */
++
++/ {
++	model = "PHYTEC i.MX8QX PCM-942";
++	compatible = "phytec,imx8qxp-pcm-942", "phytec,imx8qxp-phycore-som", "fsl,imx8qxp";
++
++	chosen {
++		bootargs = "console=ttyLP0,115200 earlycon=lpuart32,0x5a060000,115200";
++		stdout-path = &lpuart0;
++	};
++
++	reg_1p8v: regulator-1p8v {
++		compatible = "regulator-fixed";
++		regulator-name = "1P8V";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-always-on;
++	};
++
++	reg_3p3v: regulator-3p3v {
++		compatible = "regulator-fixed";
++		regulator-name = "3P3V";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-always-on;
++	};
++
++	reg_bt: regulator-bt {
++		status = "disabled";
++		compatible = "regulator-fixed";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_bt_en>;
++		regulator-name = "bt";
++		gpio = <&lsio_gpio4 20 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-always-on;
++	};
++
++	sdio_pwrseq: sdio-pwrseq {
++		status = "disabled";
++		compatible = "mmc-pwrseq-simple";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_wifi_en>;
++		reset-gpios = <&lsio_gpio4 19 GPIO_ACTIVE_LOW>;
++	};
++
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&dailink0_master>;
++		simple-audio-card,frame-master = <&dailink0_master>;
++		simple-audio-card,name = "imx8qxp-sgtl5000";
++
++		simple-audio-card,cpu {
++			sound-dai = <&sai1>;
++		};
++
++		dailink0_master: simple-audio-card,codec {
++			sound-dai = <&sgtl5000>;
++			clocks = <&mclkout0_lpcg 0>;
++		};
++	};
++};
++
++&i2c1 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpi2c1>;
++	status = "okay";
++
++	tps6598x: tps6598x@3f {
++		compatible = "ti,tps6598x";
++		reg = <0x3f>;
++	};
++
++	i2c_rtc: rtc@52 {
++		compatible = "microcrystal,rv3028";
++		reg = <0x52>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i2crtc>;
++		interrupt-parent = <&lsio_gpio0>;
++		interrupts = <25 IRQ_TYPE_LEVEL_LOW>;
++		backup-switchover-mode = <0x1>;
++		status = "okay";
++	};
++
++	eeprom_cb: eeprom@51 {
++		compatible = "atmel,24c32";
++		pagesize = <32>;
++		reg = <0x51>;
++		status = "okay";
++	};
++
++	sgtl5000: codec@a {
++		#sound-dai-cells = <0>;
++		compatible = "fsl,sgtl5000";
++		reg = <0xa>;
++		assigned-clocks = <&clk IMX_SC_R_AUDIO_PLL_0 IMX_SC_PM_CLK_PLL>,
++				<&clk IMX_SC_R_AUDIO_PLL_0 IMX_SC_PM_CLK_SLV_BUS>,
++				<&clk IMX_SC_R_AUDIO_PLL_0 IMX_SC_PM_CLK_MST_BUS>,
++				<&mclkout0_lpcg 0>;
++		assigned-clock-rates = <786432000>, <49152000>, <12000000>, <12000000>;
++		clocks = <&mclkout0_lpcg 0>;
++		clock-names = "mclk";
++		VDDA-supply = <&reg_3p3v>;
++		VDDIO-supply = <&reg_3p3v>;
++		VDDD-supply = <&reg_1p8v>;
++	};
++
++	xio: gpio@20 {
++		compatible = "nxp,pcf8574a";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++};
++
++&lpuart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpuart0>;
++	status = "okay";
++};
++
++&lpuart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpuart1>;
++	status = "okay";
++};
++
++&gpu_3d0 {
++	status = "okay";
++};
++
++&imx8_gpu_ss {
++	status = "okay";
++};
++
++&dc0_prg1 {
++	status = "okay";
++};
++
++&dc0_prg2 {
++	status = "okay";
++};
++
++&dc0_prg3 {
++	status = "okay";
++};
++
++&dc0_prg4 {
++	status = "okay";
++};
++
++&dc0_prg5 {
++	status = "okay";
++};
++
++&dc0_prg6 {
++	status = "okay";
++};
++
++&dc0_prg7 {
++	status = "okay";
++};
++
++&dc0_prg8 {
++	status = "okay";
++};
++
++&dc0_prg9 {
++	status = "okay";
++};
++
++&dc0_dpr1_channel1 {
++	status = "okay";
++};
++
++&dc0_dpr1_channel2 {
++	status = "okay";
++};
++
++&dc0_dpr1_channel3 {
++	status = "okay";
++};
++
++&dc0_dpr2_channel1 {
++	status = "okay";
++};
++
++&dc0_dpr2_channel2 {
++	status = "okay";
++};
++
++&dc0_dpr2_channel3 {
++	status = "okay";
++};
++
++&dpu1 {
++	status = "okay";
++};
++
++&usbphy1 {
++	status = "okay";
++};
++
++&usbotg1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usbotg1>;
++	srp-disable;
++	hnp-disable;
++	adp-disable;
++	power-active-high;
++	disable-over-current;
++	status = "okay";
++};
++
++&usbotg3 {
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usdhc2 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc2_sd>, <&pinctrl_usdhc2_gpio>;
++	pinctrl-1 = <&pinctrl_usdhc2_sd>, <&pinctrl_usdhc2_gpio>;
++	pinctrl-2 = <&pinctrl_usdhc2_sd>, <&pinctrl_usdhc2_gpio>;
++	bus-width = <4>;
++	no-1-8-v;
++	cd-gpios = <&lsio_gpio4 22 GPIO_ACTIVE_LOW>;
++	status = "okay";
++};
++
++&fec2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_fec2>;
++	phy-mode = "rgmii-id";
++	phy-handle = <&ethphy1>;
++	fsl,magic-packet;
++	nvmem-cells = <&fec_mac1>;
++	nvmem-cell-names = "mac-address";
++	status = "okay";
++};
++
++&mdio {
++	ethphy1: ethernet-phy@3 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <3>;
++		ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_50_NS>;
++		ti,tx-internal-delay = <DP83867_RGMIIDCTL_2_50_NS>;
++		ti,fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_8_B_NIB>;
++		ti,led-0-active-low;
++		ti,led-2-active-low;
++		enet-phy-lane-no-swap;
++	};
++};
++
++&flexcan2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan2>;
++	status = "okay";
++};
++
++&i2c0_mipi_lvds0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c0_mipi_lvds0>;
++	clock-frequency = <100000>;
++	status = "disabled";
++};
++
++&i2c0_mipi_lvds1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c0_mipi_lvds1>;
++	clock-frequency = <100000>;
++	status = "disabled";
++};
++
++&ldb1_phy {
++	status = "disabled";
++};
++
++&ldb2_phy {
++	status = "disabled";
++};
++
++&ldb1 {
++	status = "disabled";
++};
++
++&ldb2 {
++	status = "disabled";
++};
++
++&dc0_pc {
++	status = "disabled";
++};
++
++&pcieb{
++	compatible = "fsl,imx8qxp-pcie","snps,dw-pcie";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pcieb>;
++	reset-gpio = <&lsio_gpio4 0 GPIO_ACTIVE_LOW>;
++	ext_osc = <1>;
++	status = "okay";
++};
++
++&sai1 {
++	#sound-dai-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai1>;
++	status = "okay";
++};
++
++&lpspi2 {
++	fsl,spi-num-chipselects = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpspi2>;
++	status = "okay";
++
++	spidev2_0: spi2@0 {
++		reg = <0>;
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <10000000>;
++	};
++};
++
++&lpspi3 {
++	fsl,spi-num-chipselects = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lpspi3>;
++	status = "okay";
++
++	spidev3_0: spi3@0 {
++		reg = <0>;
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <10000000>;
++	};
++};
++
++&iomuxc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog>;
++
++	pcm942 {
++		pinctrl_hog: hoggrp {
++			fsl,pins = <
++				IMX8QXP_SAI0_TXFS_LSIO_GPIO0_IO28      0x06000021	 /* User LED */
++				IMX8QXP_SAI1_RXC_LSIO_GPIO0_IO30       0x06000021	 /* USBOTG1 Port Select */
++				IMX8QXP_MCLK_OUT0_ADMA_ACM_MCLK_OUT0   0x0600004c	 /* Audio Clock*/
++				IMX8QXP_SAI1_RXFS_LSIO_GPIO0_IO31      0x06000021	 /* CAN Fault */
++				IMX8QXP_SPI0_CS1_LSIO_GPIO1_IO07       0x06000021	 /* ETH1 OR Gate */
++			>;
++		};
++
++		pinctrl_i2crtc: i2crtcgrp {
++			fsl,pins = <
++				IMX8QXP_SAI0_TXD_LSIO_GPIO0_IO25        0x06000021
++			>;
++		};
++
++
++		pinctrl_fec2: fec2grp {
++			fsl,pins = <
++				IMX8QXP_ESAI0_SCKR_CONN_ENET1_RGMII_TX_CTL	   0x06000020
++				IMX8QXP_ESAI0_FSR_CONN_ENET1_RGMII_TXC		   0x06000020
++				IMX8QXP_ESAI0_TX4_RX1_CONN_ENET1_RGMII_TXD0	   0x06000020
++				IMX8QXP_ESAI0_TX5_RX0_CONN_ENET1_RGMII_TXD1	   0x06000020
++				IMX8QXP_ESAI0_FST_CONN_ENET1_RGMII_TXD2		   0x06000020
++				IMX8QXP_ESAI0_SCKT_CONN_ENET1_RGMII_TXD3	   0x06000020
++				IMX8QXP_ESAI0_TX0_CONN_ENET1_RGMII_RXC		   0x06000020
++				IMX8QXP_SPDIF0_TX_CONN_ENET1_RGMII_RX_CTL	   0x06000020
++				IMX8QXP_SPDIF0_RX_CONN_ENET1_RGMII_RXD0		   0x06000020
++				IMX8QXP_ESAI0_TX3_RX2_CONN_ENET1_RGMII_RXD1	   0x06000020
++				IMX8QXP_ESAI0_TX2_RX3_CONN_ENET1_RGMII_RXD2	   0x06000020
++				IMX8QXP_ESAI0_TX1_CONN_ENET1_RGMII_RXD3		   0x06000020
++			>;
++		};
++
++		pinctrl_flexcan2: flexcan1grp {
++			fsl,pins = <
++				IMX8QXP_UART2_TX_ADMA_FLEXCAN1_TX		0x10000021
++				IMX8QXP_UART2_RX_ADMA_FLEXCAN1_RX		0x10000021
++			>;
++		};
++
++		pinctrl_lpi2c1: lpi1cgrp {
++			fsl,pins = <
++				IMX8QXP_USB_SS3_TC1_ADMA_I2C1_SCL	0x06000020
++				IMX8QXP_USB_SS3_TC3_ADMA_I2C1_SDA	0x06000020
++			>;
++		};
++
++		pinctrl_lpuart0: lpuart0grp {
++			fsl,pins = <
++				IMX8QXP_UART0_RX_ADMA_UART0_RX	0x0600002c
++				IMX8QXP_UART0_TX_ADMA_UART0_TX	0x0600002c
++			>;
++		};
++
++		pinctrl_lpuart1: lpuart1grp {
++			fsl,pins = <
++				IMX8QXP_UART1_TX_ADMA_UART1_TX	   0x06000020
++				IMX8QXP_UART1_RX_ADMA_UART1_RX	   0x06000020
++			>;
++		};
++
++		pinctrl_lpuart1_rtscts: lpuart1rtsctsgrp {
++			fsl,pins = <
++				IMX8QXP_UART1_RTS_B_ADMA_UART1_RTS_B     0x06000020
++				IMX8QXP_UART1_CTS_B_ADMA_UART1_CTS_B     0x06000020
++			>;
++		};
++
++		pinctrl_usdhc2_gpio: usdhc2gpiogrp {
++			fsl,pins = <
++				IMX8QXP_USDHC1_CD_B_LSIO_GPIO4_IO22	0x06000020
++			>;
++		};
++
++		pinctrl_usdhc2_sd: usdhc2sdgrp {
++			fsl,pins = <
++				IMX8QXP_USDHC1_CLK_CONN_USDHC1_CLK	0x06000040
++				IMX8QXP_USDHC1_CMD_CONN_USDHC1_CMD	0x06000060
++				IMX8QXP_USDHC1_DATA0_CONN_USDHC1_DATA0	0x06000060
++				IMX8QXP_USDHC1_DATA1_CONN_USDHC1_DATA1	0x06000060
++				IMX8QXP_USDHC1_DATA2_CONN_USDHC1_DATA2	0x06000060
++				IMX8QXP_USDHC1_DATA3_CONN_USDHC1_DATA3	0x06000060
++			>;
++		};
++
++		pinctrl_usdhc2_wifi: usdhc2wifigrp {
++			fsl,pins = <
++				IMX8QXP_USDHC1_CLK_CONN_USDHC1_CLK      0x06000040
++				IMX8QXP_USDHC1_CMD_CONN_USDHC1_CMD      0x06000020
++				IMX8QXP_USDHC1_DATA0_CONN_USDHC1_DATA0  0x06000020
++				IMX8QXP_USDHC1_DATA1_CONN_USDHC1_DATA1  0x06000020
++				IMX8QXP_USDHC1_DATA2_CONN_USDHC1_DATA2  0x06000020
++				IMX8QXP_USDHC1_DATA3_CONN_USDHC1_DATA3  0x06000020
++			>;
++		};
++
++		pinctrl_usbotg1: usbotg1 {
++			fsl,pins = <
++				IMX8QXP_USB_SS3_TC0_CONN_USB_OTG1_PWR	   0x00000021
++			>;
++		};
++
++		pinctrl_i2c0_mipi_lvds0: mipi_lvds0_i2c0_grp {
++			fsl,pins = <
++				IMX8QXP_MIPI_DSI0_I2C0_SCL_MIPI_DSI0_I2C0_SCL	   0x06000020
++				IMX8QXP_MIPI_DSI0_I2C0_SDA_MIPI_DSI0_I2C0_SDA	   0x06000020
++			>;
++		};
++
++		pinctrl_i2c0_mipi_lvds1: mipi_lvds1_i2c0_grp {
++			fsl,pins = <
++				IMX8QXP_MIPI_DSI1_I2C0_SCL_MIPI_DSI1_I2C0_SCL	   0x06000020
++				IMX8QXP_MIPI_DSI1_I2C0_SDA_MIPI_DSI1_I2C0_SDA	   0x06000020
++			>;
++		};
++
++		pinctrl_lvds0: lvds0grp {
++			fsl,pins = <
++				IMX8QXP_MIPI_DSI0_GPIO0_01_LSIO_GPIO1_IO28 0x06000021
++			>;
++		};
++
++		pinctrl_lvds1: lvds1grp {
++			fsl,pins = <
++				IMX8QXP_MIPI_DSI1_GPIO0_01_LSIO_GPIO2_IO00 0x06000021
++			>;
++		};
++
++		pinctrl_pcieb: pcieagrp{
++			fsl,pins = <
++				IMX8QXP_PCIE_CTRL0_PERST_B_LSIO_GPIO4_IO00    0x06000021
++				IMX8QXP_PCIE_CTRL0_CLKREQ_B_LSIO_GPIO4_IO01   0x06000021
++				IMX8QXP_PCIE_CTRL0_WAKE_B_LSIO_GPIO4_IO02     0x04000021
++			>;
++		};
++
++		pinctrl_sai1: sai1grp {
++			fsl,pins = <
++				IMX8QXP_FLEXCAN1_TX_ADMA_SAI1_RXD     0x06000040
++				IMX8QXP_FLEXCAN1_RX_ADMA_SAI1_TXD     0x06000060
++				IMX8QXP_FLEXCAN0_TX_ADMA_SAI1_TXFS    0x06000040
++				IMX8QXP_FLEXCAN0_RX_ADMA_SAI1_TXC     0x06000040
++			>;
++		};
++
++		pinctrl_lpspi2: lpspi2grp {
++			fsl,pins = <
++				IMX8QXP_SPI2_SCK_ADMA_SPI2_SCK          0x600004c
++				IMX8QXP_SPI2_SDO_ADMA_SPI2_SDO          0x600004c
++				IMX8QXP_SPI2_SDI_ADMA_SPI2_SDI          0x600004c
++				IMX8QXP_SPI2_CS0_ADMA_SPI2_CS0          0x600004c
++			>;
++		};
++
++		pinctrl_lpspi3: lpspi3grp {
++			fsl,pins = <
++				IMX8QXP_SPI3_SCK_ADMA_SPI3_SCK          0x600004c
++				IMX8QXP_SPI3_SDO_ADMA_SPI3_SDO          0x600004c
++				IMX8QXP_SPI3_SDI_ADMA_SPI3_SDI          0x600004c
++				IMX8QXP_SPI3_CS0_ADMA_SPI3_CS0          0x600004c
++				IMX8QXP_SPI3_CS1_ADMA_SPI3_CS1          0x600004c
++			>;
++		};
++
++		pinctrl_bt_en: btengpiogrp {
++			fsl,pins = <
++				IMX8QXP_USDHC1_VSELECT_LSIO_GPIO4_IO20	0x06000060
++			>;
++		};
++
++		pinctrl_wifi_en: wifiengpiogrp {
++			fsl,pins = <
++				IMX8QXP_USDHC1_RESET_B_LSIO_GPIO4_IO19	0x06000060
++			>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-phycore-rdk-emmc.dts b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-phycore-rdk-emmc.dts
+new file mode 100644
+index 000000000000..76745171719d
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-phycore-rdk-emmc.dts
+@@ -0,0 +1,12 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2018 PHYTEC Messtechnik GmbH
++ * Author: Christian Hemp <c.hemp@phytec.de>
++ *
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ */
++
++/dts-v1/;
++
++#include "phytec-imx8qxp-phycore-som.dtsi"
++#include "phytec-imx8qxp-pcm-942.dtsi"
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-phycore-som.dtsi b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-phycore-som.dtsi
+new file mode 100644
+index 000000000000..6e57fcdb1d54
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-phycore-som.dtsi
+@@ -0,0 +1,222 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2018 PHYTEC Messtechnik GmbH
++ *
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ */
++
++#include "../freescale/imx8qxp.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/net/ti-dp83867.h>
++
++/ {
++	model = "Phytec phyCORE-i.MX8X";
++	compatible = "phytec,imx8qxp-pcm065", "fsl,imx8qxp";
++};
++
++&fec1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_fec1>;
++	phy-mode = "rgmii-id";
++	phy-handle = <&ethphy0>;
++	nvmem-cells = <&fec_mac0>;
++	nvmem-cell-names = "mac-address";
++	fsl,magic-packet;
++	status = "okay";
++
++	mdio: mdio {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ethphy0: ethernet-phy@1 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <1>;
++			ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_00_NS>;
++			ti,tx-internal-delay = <DP83867_RGMIIDCTL_2_00_NS>;
++			ti,fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_8_B_NIB>;
++			ti,led-0-active-low;
++			ti,led-2-active-low;
++			enet-phy-lane-no-swap;
++		};
++	};
++};
++
++&flexspi0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexspi0>;
++	status = "okay";
++
++	flash0: mt35xu512aba@0 {
++		reg = <0>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "jedec,spi-nor";
++		spi-max-frequency = <29000000>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++	};
++};
++
++&i2c_mipi_csi0 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c_mipi_csi0>;
++	status = "okay";
++
++	i2c_mipi_csi0_eeprom: eeprom@56 {
++		compatible = "atmel,24c32";
++		pagesize = <32>;
++		reg = <0x56>;
++		status = "okay";
++	};
++};
++
++&irqsteer_csi0 {
++	status = "okay";
++};
++
++&usdhc1 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
++	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
++	bus-width = <8>;
++	no-sd;
++	no-sdio;
++	non-removable;
++	status = "okay";
++};
++
++&thermal_zones {
++	pmic-thermal0 {
++		polling-delay-passive = <250>;
++		polling-delay = <2000>;
++		thermal-sensors = <&tsens 497>;
++		trips {
++			pmic_alert0: trip0 {
++				temperature = <110000>;
++				hysteresis = <2000>;
++				type = "passive";
++			};
++			pmic_crit0: trip1 {
++				temperature = <125000>;
++				hysteresis = <2000>;
++				type = "critical";
++			};
++		};
++		cooling-maps {
++			map0 {
++				trip = <&pmic_alert0>;
++				cooling-device =
++					<&A35_0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++					<&A35_1 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++					<&A35_2 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++					<&A35_3 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++			};
++		};
++	};
++};
++
++&iomuxc {
++	pcm065 {
++		pinctrl_fec1: fec1grp {
++			fsl,pins = <
++				IMX8QXP_ENET0_MDC_CONN_ENET0_MDC			0x06000020
++				IMX8QXP_ENET0_MDIO_CONN_ENET0_MDIO			0x06000060
++				IMX8QXP_ENET0_RGMII_TX_CTL_CONN_ENET0_RGMII_TX_CTL	0x06000020
++				IMX8QXP_ENET0_RGMII_TXC_CONN_ENET0_RGMII_TXC		0x06000020
++				IMX8QXP_ENET0_RGMII_TXD0_CONN_ENET0_RGMII_TXD0		0x06000020
++				IMX8QXP_ENET0_RGMII_TXD1_CONN_ENET0_RGMII_TXD1		0x06000020
++				IMX8QXP_ENET0_RGMII_TXD2_CONN_ENET0_RGMII_TXD2		0x06000020
++				IMX8QXP_ENET0_RGMII_TXD3_CONN_ENET0_RGMII_TXD3		0x06000020
++				IMX8QXP_ENET0_RGMII_RXC_CONN_ENET0_RGMII_RXC		0x06000020
++				IMX8QXP_ENET0_RGMII_RX_CTL_CONN_ENET0_RGMII_RX_CTL	0x06000020
++				IMX8QXP_ENET0_RGMII_RXD0_CONN_ENET0_RGMII_RXD0		0x06000020
++				IMX8QXP_ENET0_RGMII_RXD1_CONN_ENET0_RGMII_RXD1		0x06000020
++				IMX8QXP_ENET0_RGMII_RXD2_CONN_ENET0_RGMII_RXD2		0x06000020
++				IMX8QXP_ENET0_RGMII_RXD3_CONN_ENET0_RGMII_RXD3		0x06000020
++			>;
++		};
++
++		pinctrl_flexspi0: flexspi0grp {
++			fsl,pins = <
++				IMX8QXP_QSPI0A_DATA0_LSIO_QSPI0A_DATA0		0x0600004c
++				IMX8QXP_QSPI0A_DATA1_LSIO_QSPI0A_DATA1		0x0600004c
++				IMX8QXP_QSPI0A_DATA2_LSIO_QSPI0A_DATA2		0x0600004c
++				IMX8QXP_QSPI0A_DATA3_LSIO_QSPI0A_DATA3		0x0600004c
++				IMX8QXP_QSPI0A_DQS_LSIO_QSPI0A_DQS		0x0600004c
++				IMX8QXP_QSPI0A_SS0_B_LSIO_QSPI0A_SS0_B		0x0600004c
++				IMX8QXP_QSPI0A_SS1_B_LSIO_QSPI0A_SS1_B		0x0600004c
++				IMX8QXP_QSPI0A_SCLK_LSIO_QSPI0A_SCLK		0x0600004c
++				IMX8QXP_QSPI0B_SCLK_LSIO_QSPI0B_SCLK		0x0600004c
++				IMX8QXP_QSPI0B_DATA0_LSIO_QSPI0B_DATA0		0x0600004c
++				IMX8QXP_QSPI0B_DATA1_LSIO_QSPI0B_DATA1		0x0600004c
++				IMX8QXP_QSPI0B_DATA2_LSIO_QSPI0B_DATA2		0x0600004c
++				IMX8QXP_QSPI0B_DATA3_LSIO_QSPI0B_DATA3		0x0600004c
++				IMX8QXP_QSPI0B_DQS_LSIO_QSPI0B_DQS		0x0600004c
++				IMX8QXP_QSPI0B_SS0_B_LSIO_QSPI0B_SS0_B		0x0600004c
++				IMX8QXP_QSPI0B_SS1_B_LSIO_QSPI0B_SS1_B		0x0600004c
++			>;
++		};
++
++		pinctrl_i2c_mipi_csi0: i2c_mipi_csi0 {
++			fsl,pins = <
++				IMX8QXP_MIPI_CSI0_I2C0_SCL_MIPI_CSI0_I2C0_SCL 0xc2000020
++				IMX8QXP_MIPI_CSI0_I2C0_SDA_MIPI_CSI0_I2C0_SDA 0xc2000020
++			>;
++		};
++
++		pinctrl_usdhc1: usdhc1grp {
++			fsl,pins = <
++				IMX8QXP_EMMC0_CLK_CONN_EMMC0_CLK		0x06000041
++				IMX8QXP_EMMC0_CMD_CONN_EMMC0_CMD		0x00000021
++				IMX8QXP_EMMC0_DATA0_CONN_EMMC0_DATA0		0x00000021
++				IMX8QXP_EMMC0_DATA1_CONN_EMMC0_DATA1		0x00000021
++				IMX8QXP_EMMC0_DATA2_CONN_EMMC0_DATA2		0x00000021
++				IMX8QXP_EMMC0_DATA3_CONN_EMMC0_DATA3		0x00000021
++				IMX8QXP_EMMC0_DATA4_CONN_EMMC0_DATA4		0x00000021
++				IMX8QXP_EMMC0_DATA5_CONN_EMMC0_DATA5		0x00000021
++				IMX8QXP_EMMC0_DATA6_CONN_EMMC0_DATA6		0x00000021
++				IMX8QXP_EMMC0_DATA7_CONN_EMMC0_DATA7		0x00000021
++				IMX8QXP_EMMC0_STROBE_CONN_EMMC0_STROBE		0x06000041
++				IMX8QXP_EMMC0_RESET_B_CONN_EMMC0_RESET_B	0x00000021
++			>;
++		};
++
++		pinctrl_usdhc1_100mhz: usdhc1grp100mhz {
++			fsl,pins = <
++				IMX8QXP_EMMC0_CLK_CONN_EMMC0_CLK		0x06000040
++				IMX8QXP_EMMC0_CMD_CONN_EMMC0_CMD		0x00000020
++				IMX8QXP_EMMC0_DATA0_CONN_EMMC0_DATA0		0x00000020
++				IMX8QXP_EMMC0_DATA1_CONN_EMMC0_DATA1		0x00000020
++				IMX8QXP_EMMC0_DATA2_CONN_EMMC0_DATA2		0x00000020
++				IMX8QXP_EMMC0_DATA3_CONN_EMMC0_DATA3		0x00000020
++				IMX8QXP_EMMC0_DATA4_CONN_EMMC0_DATA4		0x00000020
++				IMX8QXP_EMMC0_DATA5_CONN_EMMC0_DATA5		0x00000020
++				IMX8QXP_EMMC0_DATA6_CONN_EMMC0_DATA6		0x00000020
++				IMX8QXP_EMMC0_DATA7_CONN_EMMC0_DATA7		0x00000020
++				IMX8QXP_EMMC0_STROBE_CONN_EMMC0_STROBE		0x06000040
++				IMX8QXP_EMMC0_RESET_B_CONN_EMMC0_RESET_B	0x00000020
++			>;
++		};
++
++		pinctrl_usdhc1_200mhz: usdhc1grp200mhz {
++			fsl,pins = <
++				IMX8QXP_EMMC0_CLK_CONN_EMMC0_CLK		0x06000040
++				IMX8QXP_EMMC0_CMD_CONN_EMMC0_CMD		0x00000020
++				IMX8QXP_EMMC0_DATA0_CONN_EMMC0_DATA0		0x00000020
++				IMX8QXP_EMMC0_DATA1_CONN_EMMC0_DATA1		0x00000020
++				IMX8QXP_EMMC0_DATA2_CONN_EMMC0_DATA2		0x00000020
++				IMX8QXP_EMMC0_DATA3_CONN_EMMC0_DATA3		0x00000020
++				IMX8QXP_EMMC0_DATA4_CONN_EMMC0_DATA4		0x00000020
++				IMX8QXP_EMMC0_DATA5_CONN_EMMC0_DATA5		0x00000020
++				IMX8QXP_EMMC0_DATA6_CONN_EMMC0_DATA6		0x00000020
++				IMX8QXP_EMMC0_DATA7_CONN_EMMC0_DATA7		0x00000020
++				IMX8QXP_EMMC0_STROBE_CONN_EMMC0_STROBE		0x06000040
++				IMX8QXP_EMMC0_RESET_B_CONN_EMMC0_RESET_B	0x00000020
++			>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-uart2.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-uart2.dtso
+new file mode 100644
+index 000000000000..366ba55c7980
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-uart2.dtso
+@@ -0,0 +1,45 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ *
++ * Disable the FlexCAN 2 interface and enable UART 2
++ */
++
++/dts-v1/;
++/plugin/;
++
++#include <dt-bindings/pinctrl/pads-imx8qxp.h>
++
++/ {
++	compatible = "phytec,imx8qxp-pcm-942", "phytec,imx8qxp-phycore-som", "fsl,imx8qxp";
++
++	fragment@0 {
++		target = <&flexcan2>;
++		__overlay__ {
++			status = "disabled";
++		};
++	};
++
++	fragment@1 {
++		target = <&lpuart2>;
++		__overlay__ {
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_lpuart2>;
++			status = "okay";
++		};
++	};
++
++	fragment@2 {
++		target = <&iomuxc>;
++		__overlay__ {
++			pcm942 {
++				pinctrl_lpuart2: lpuart2grp {
++					fsl,pins = <
++						IMX8QXP_UART2_TX_ADMA_UART2_TX	   0x06000020
++						IMX8QXP_UART2_RX_ADMA_UART2_RX	   0x06000020
++					>;
++				};
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/phytec/phytec-imx8qxp-wifi.dtso b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-wifi.dtso
+new file mode 100644
+index 000000000000..2706d5931271
+--- /dev/null
++++ b/arch/arm64/boot/dts/phytec/phytec-imx8qxp-wifi.dtso
+@@ -0,0 +1,36 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2019-2021 PHYTEC America, LLC
++ *
++ * Enable WiFi on PCM-942
++ */
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	fragment@3 {
++		target = <&usdhc2>;
++		__overlay__ {
++			cd-gpios = <0 0 0>;
++			mmc-pwrseq = <&sdio_pwrseq>;
++			non-removable;
++			no-sd;
++			pinctrl-0 = <&pinctrl_usdhc2_wifi>, <&pinctrl_usdhc2_gpio>;
++			pinctrl-1 = <&pinctrl_usdhc2_wifi>, <&pinctrl_usdhc2_gpio>;
++			pinctrl-2 = <&pinctrl_usdhc2_wifi>, <&pinctrl_usdhc2_gpio>;
++
++			brcmf: wifi@1 {
++				reg = <1>;
++				compatible = "brcm,bcm4329-fmac";
++			};
++		};
++	};
++
++	fragment@4 {
++		target = <&sdio_pwrseq>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++};
+diff --git a/arch/arm64/configs/imx8x_phycore_kit_defconfig b/arch/arm64/configs/imx8x_phycore_kit_defconfig
+new file mode 100644
+index 000000000000..68af693dc20b
+--- /dev/null
++++ b/arch/arm64/configs/imx8x_phycore_kit_defconfig
+@@ -0,0 +1,852 @@
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_AUDIT=y
++CONFIG_NO_HZ_IDLE=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_PREEMPT=y
++CONFIG_IRQ_TIME_ACCOUNTING=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_TASKSTATS=y
++CONFIG_TASK_DELAY_ACCT=y
++CONFIG_TASK_XACCT=y
++CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_NUMA_BALANCING=y
++CONFIG_MEMCG=y
++CONFIG_MEMCG_SWAP=y
++CONFIG_BLK_CGROUP=y
++CONFIG_CGROUP_PIDS=y
++CONFIG_CGROUP_HUGETLB=y
++CONFIG_CPUSETS=y
++CONFIG_CGROUP_DEVICE=y
++CONFIG_CGROUP_CPUACCT=y
++CONFIG_CGROUP_PERF=y
++CONFIG_USER_NS=y
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_KALLSYMS_ALL=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_PROFILING=y
++CONFIG_ARCH_LAYERSCAPE=y
++CONFIG_ARCH_MXC=y
++CONFIG_ARCH_S32=y
++CONFIG_SOC_S32V234=y
++CONFIG_ARM64_VA_BITS_48=y
++CONFIG_SCHED_MC=y
++CONFIG_NUMA=y
++CONFIG_SECCOMP=y
++CONFIG_KEXEC=y
++CONFIG_CRASH_DUMP=y
++CONFIG_XEN=y
++CONFIG_FORCE_MAX_ZONEORDER=14
++CONFIG_COMPAT=y
++CONFIG_RANDOMIZE_BASE=y
++CONFIG_PM_DEBUG=y
++CONFIG_PM_TEST_SUSPEND=y
++CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
++CONFIG_ARM_CPUIDLE=y
++CONFIG_ARM_PSCI_CPUIDLE=y
++CONFIG_CPU_FREQ=y
++CONFIG_CPU_FREQ_STAT=y
++CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
++CONFIG_CPU_FREQ_GOV_POWERSAVE=y
++CONFIG_CPU_FREQ_GOV_USERSPACE=y
++CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
++CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
++CONFIG_CPUFREQ_DT=y
++CONFIG_ACPI_CPPC_CPUFREQ=m
++CONFIG_ARM_SCPI_CPUFREQ=y
++CONFIG_ARM_IMX_CPUFREQ_DT=y
++CONFIG_QORIQ_CPUFREQ=y
++CONFIG_ARM_SCPI_PROTOCOL=y
++CONFIG_EFI_CAPSULE_LOADER=y
++CONFIG_IMX_DSP=y
++CONFIG_IMX_SCU=y
++CONFIG_IMX_SCU_PD=y
++CONFIG_IMX_SECO_MU=y
++CONFIG_ACPI=y
++CONFIG_ACPI_APEI=y
++CONFIG_ACPI_APEI_GHES=y
++CONFIG_ACPI_APEI_PCIEAER=y
++CONFIG_ACPI_APEI_MEMORY_FAILURE=y
++CONFIG_ACPI_APEI_EINJ=y
++CONFIG_VIRTUALIZATION=y
++CONFIG_KVM=y
++CONFIG_ARM64_CRYPTO=y
++CONFIG_CRYPTO_SHA1_ARM64_CE=y
++CONFIG_CRYPTO_SHA2_ARM64_CE=y
++CONFIG_CRYPTO_SHA512_ARM64_CE=m
++CONFIG_CRYPTO_SHA3_ARM64=m
++CONFIG_CRYPTO_SM3_ARM64_CE=m
++CONFIG_CRYPTO_GHASH_ARM64_CE=y
++CONFIG_CRYPTO_CRCT10DIF_ARM64_CE=m
++CONFIG_CRYPTO_AES_ARM64_CE_CCM=y
++CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
++CONFIG_CRYPTO_CHACHA20_NEON=m
++CONFIG_CRYPTO_AES_ARM64_BS=m
++CONFIG_JUMP_LABEL=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_KSM=y
++CONFIG_MEMORY_FAILURE=y
++CONFIG_TRANSPARENT_HUGEPAGE=y
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_PNP_BOOTP=y
++CONFIG_IPV6_SIT=m
++CONFIG_NETFILTER=y
++CONFIG_NF_CONNTRACK=m
++CONFIG_NF_CONNTRACK_EVENTS=y
++CONFIG_NETFILTER_XT_TARGET_CHECKSUM=m
++CONFIG_NETFILTER_XT_TARGET_LOG=m
++CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=m
++CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m
++CONFIG_IP_NF_IPTABLES=m
++CONFIG_IP_NF_FILTER=m
++CONFIG_IP_NF_TARGET_REJECT=m
++CONFIG_IP_NF_NAT=m
++CONFIG_IP_NF_TARGET_MASQUERADE=m
++CONFIG_IP_NF_MANGLE=m
++CONFIG_IP6_NF_IPTABLES=m
++CONFIG_IP6_NF_FILTER=m
++CONFIG_IP6_NF_TARGET_REJECT=m
++CONFIG_IP6_NF_MANGLE=m
++CONFIG_IP6_NF_NAT=m
++CONFIG_IP6_NF_TARGET_MASQUERADE=m
++CONFIG_BRIDGE=m
++CONFIG_BRIDGE_VLAN_FILTERING=y
++CONFIG_VLAN_8021Q_GVRP=y
++CONFIG_VLAN_8021Q_MVRP=y
++CONFIG_LLC2=y
++CONFIG_NET_SCHED=y
++CONFIG_NET_SCH_MULTIQ=y
++CONFIG_NET_SCH_CBS=y
++CONFIG_NET_SCH_TAPRIO=y
++CONFIG_NET_SCH_MQPRIO=y
++CONFIG_NET_CLS_BASIC=y
++CONFIG_NET_CLS_TCINDEX=y
++CONFIG_TSN=y
++CONFIG_NET_SWITCHDEV=y
++CONFIG_BPF_JIT=y
++CONFIG_NET_PKTGEN=y
++CONFIG_CAN=m
++CONFIG_CAN_FLEXCAN=m
++CONFIG_BT=m
++CONFIG_BT_RFCOMM=y
++CONFIG_BT_RFCOMM_TTY=y
++CONFIG_BT_BNEP=y
++CONFIG_BT_BNEP_MC_FILTER=y
++CONFIG_BT_BNEP_PROTO_FILTER=y
++CONFIG_BT_HIDP=y
++# CONFIG_BT_HS is not set
++CONFIG_BT_LEDS=y
++# CONFIG_BT_DEBUGFS is not set
++CONFIG_BT_HCIBTUSB=m
++CONFIG_BT_HCIUART=m
++CONFIG_BT_HCIUART_BCSP=y
++CONFIG_BT_HCIUART_ATH3K=y
++CONFIG_BT_HCIUART_LL=y
++CONFIG_BT_HCIUART_BCM=y
++CONFIG_BT_HCIUART_QCA=y
++CONFIG_BT_HCIVHCI=m
++CONFIG_CFG80211=m
++CONFIG_RFKILL=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
++CONFIG_PCI=y
++CONFIG_PCIEPORTBUS=y
++CONFIG_PCI_IOV=y
++CONFIG_HOTPLUG_PCI=y
++CONFIG_HOTPLUG_PCI_ACPI=y
++CONFIG_PCI_HOST_GENERIC=y
++CONFIG_PCI_XGENE=y
++CONFIG_PCIE_ALTERA=y
++CONFIG_PCIE_ALTERA_MSI=y
++CONFIG_PCI_HOST_THUNDER_PEM=y
++CONFIG_PCI_HOST_THUNDER_ECAM=y
++CONFIG_PCI_IMX6=y
++CONFIG_PCI_LAYERSCAPE=y
++CONFIG_PCI_HISI=y
++CONFIG_PCIE_KIRIN=y
++CONFIG_PCIE_LAYERSCAPE_GEN4=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_FW_LOADER_USER_HELPER=y
++CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
++CONFIG_BRCMSTB_GISB_ARB=y
++CONFIG_SIMPLE_PM_BUS=y
++CONFIG_VEXPRESS_CONFIG=y
++CONFIG_FSL_MC_BUS=y
++CONFIG_FSL_MC_UAPI_SUPPORT=y
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_CFI=y
++CONFIG_MTD_CFI_ADV_OPTIONS=y
++CONFIG_MTD_CFI_INTELEXT=y
++CONFIG_MTD_CFI_AMDSTD=y
++CONFIG_MTD_CFI_STAA=y
++CONFIG_MTD_PHYSMAP=y
++CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_MTD_DATAFLASH=y
++CONFIG_MTD_SST25L=y
++CONFIG_MTD_RAW_NAND=y
++CONFIG_MTD_NAND_DENALI_DT=y
++CONFIG_MTD_NAND_GPMI_NAND=y
++CONFIG_MTD_NAND_FSL_IFC=y
++CONFIG_MTD_SPI_NOR=y
++# CONFIG_MTD_SPI_NOR_USE_4K_SECTORS is not set
++CONFIG_MTD_UBI=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_NBD=m
++CONFIG_XEN_BLKDEV_BACKEND=m
++CONFIG_VIRTIO_BLK=y
++CONFIG_BLK_DEV_NVME=y
++CONFIG_SENSORS_FXOS8700=y
++CONFIG_SENSORS_FXAS2100X=y
++CONFIG_SRAM=y
++CONFIG_EEPROM_AT24=y
++CONFIG_EEPROM_AT25=m
++# CONFIG_SCSI_PROC_FS is not set
++CONFIG_BLK_DEV_SD=y
++CONFIG_SCSI_SAS_ATA=y
++CONFIG_SCSI_HISI_SAS=y
++CONFIG_SCSI_HISI_SAS_PCI=y
++CONFIG_SCSI_MPT3SAS=m
++CONFIG_SCSI_UFSHCD=y
++CONFIG_SCSI_UFSHCD_PLATFORM=y
++CONFIG_ATA=y
++CONFIG_SATA_AHCI=y
++CONFIG_SATA_AHCI_PLATFORM=y
++CONFIG_AHCI_IMX=y
++CONFIG_AHCI_CEVA=y
++CONFIG_AHCI_XGENE=y
++CONFIG_AHCI_QORIQ=y
++CONFIG_SATA_SIL24=y
++CONFIG_PATA_PLATFORM=y
++CONFIG_PATA_OF_PLATFORM=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_MD=m
++CONFIG_BLK_DEV_DM=m
++CONFIG_DM_MIRROR=m
++CONFIG_DM_ZERO=m
++CONFIG_NETDEVICES=y
++CONFIG_MACVLAN=m
++CONFIG_MACVTAP=m
++CONFIG_TUN=y
++CONFIG_VETH=m
++CONFIG_VIRTIO_NET=y
++CONFIG_AMD_XGBE=y
++CONFIG_ATL1C=m
++CONFIG_BNX2X=m
++CONFIG_MACB=y
++CONFIG_THUNDER_NIC_PF=y
++CONFIG_FEC=y
++CONFIG_FSL_SDK_DPAA_ETH=y
++CONFIG_FSL_DPAA2_ETH=y
++CONFIG_FSL_ENETC=y
++CONFIG_FSL_ENETC_VF=y
++CONFIG_HIX5HD2_GMAC=y
++CONFIG_HNS_DSAF=y
++CONFIG_HNS_ENET=y
++CONFIG_HNS3=y
++CONFIG_HNS3_HCLGE=y
++CONFIG_HNS3_ENET=y
++CONFIG_E1000=y
++CONFIG_E1000E=y
++CONFIG_IGB=y
++CONFIG_IGBVF=y
++CONFIG_MVMDIO=y
++CONFIG_SKY2=y
++CONFIG_MLX4_EN=m
++CONFIG_MLX5_CORE=m
++CONFIG_MLX5_CORE_EN=y
++CONFIG_MSCC_OCELOT_SWITCH=y
++CONFIG_QCOM_EMAC=m
++CONFIG_SMC91X=y
++CONFIG_SMSC911X=y
++CONFIG_STMMAC_ETH=y
++CONFIG_MDIO_BITBANG=y
++CONFIG_MDIO_BUS_MUX_MULTIPLEXER=y
++CONFIG_AQUANTIA_PHY=y
++CONFIG_AT803X_PHY=y
++CONFIG_DP83867_PHY=y
++CONFIG_INPHI_PHY=y
++CONFIG_MARVELL_PHY=m
++CONFIG_MARVELL_10G_PHY=m
++CONFIG_MICREL_PHY=y
++CONFIG_MICROSEMI_PHY=y
++CONFIG_NXP_TJA11XX_PHY=y
++CONFIG_REALTEK_PHY=y
++CONFIG_ROCKCHIP_PHY=y
++CONFIG_VITESSE_PHY=y
++CONFIG_USB_PEGASUS=m
++CONFIG_USB_RTL8150=m
++CONFIG_USB_RTL8152=m
++CONFIG_USB_LAN78XX=m
++CONFIG_USB_USBNET=m
++CONFIG_USB_NET_DM9601=m
++CONFIG_USB_NET_SR9800=m
++CONFIG_USB_NET_SMSC75XX=m
++CONFIG_USB_NET_SMSC95XX=m
++CONFIG_USB_NET_PLUSB=m
++CONFIG_USB_NET_MCS7830=m
++CONFIG_BRCMFMAC=m
++CONFIG_IVSHMEM_NET=y
++CONFIG_INPUT_EVDEV=y
++CONFIG_KEYBOARD_ADC=m
++CONFIG_KEYBOARD_GPIO=y
++CONFIG_KEYBOARD_SNVS_PWRKEY=y
++CONFIG_KEYBOARD_IMX_SC_PWRKEY=y
++CONFIG_KEYBOARD_CROS_EC=y
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_EDT_FT5X06=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C=m
++CONFIG_INPUT_MISC=y
++CONFIG_INPUT_MPL3115=y
++CONFIG_INPUT_ISL29023=y
++# CONFIG_SERIO_SERPORT is not set
++CONFIG_SERIO_AMBAKMI=y
++CONFIG_LEGACY_PTY_COUNT=16
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_EXTENDED=y
++CONFIG_SERIAL_8250_SHARE_IRQ=y
++CONFIG_SERIAL_8250_DW=y
++CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_SERIAL_AMBA_PL011=y
++CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
++CONFIG_SERIAL_IMX=y
++CONFIG_SERIAL_IMX_CONSOLE=y
++CONFIG_SERIAL_XILINX_PS_UART=y
++CONFIG_SERIAL_XILINX_PS_UART_CONSOLE=y
++CONFIG_SERIAL_FSL_LPUART=y
++CONFIG_SERIAL_FSL_LPUART_CONSOLE=y
++CONFIG_SERIAL_FSL_LINFLEXUART=y
++CONFIG_SERIAL_FSL_LINFLEXUART_CONSOLE=y
++CONFIG_SERIAL_DEV_BUS=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_IPMI_HANDLER=m
++CONFIG_IPMI_DEVICE_INTERFACE=m
++CONFIG_IPMI_SI=m
++CONFIG_TCG_TPM=y
++CONFIG_TCG_TIS_I2C_INFINEON=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_MUX=y
++CONFIG_I2C_MUX_PCA954x=y
++CONFIG_I2C_DESIGNWARE_PLATFORM=y
++CONFIG_I2C_GPIO=m
++CONFIG_I2C_IMX=y
++CONFIG_I2C_IMX_LPI2C=y
++CONFIG_I2C_RK3X=y
++CONFIG_I2C_RPBUS=y
++CONFIG_I2C_CROS_EC_TUNNEL=y
++CONFIG_XEN_I2C_BACKEND=y
++CONFIG_I2C_SLAVE=y
++CONFIG_SPI=y
++CONFIG_SPI_FSL_LPSPI=y
++CONFIG_SPI_FSL_QUADSPI=y
++CONFIG_SPI_NXP_FLEXSPI=y
++CONFIG_SPI_IMX=y
++CONFIG_SPI_FSL_DSPI=y
++CONFIG_SPI_PL022=y
++CONFIG_SPI_ROCKCHIP=y
++CONFIG_SPI_SPIDEV=y
++CONFIG_SPI_SLAVE=y
++CONFIG_SPI_SLAVE_TIME=y
++CONFIG_SPI_SLAVE_SYSTEM_CONTROL=y
++CONFIG_SPMI=y
++CONFIG_PINCTRL_SINGLE=y
++CONFIG_PINCTRL_MAX77620=y
++CONFIG_PINCTRL_IMX8MM=y
++CONFIG_PINCTRL_IMX8MN=y
++CONFIG_PINCTRL_IMX8MP=y
++CONFIG_PINCTRL_IMX8MQ=y
++CONFIG_PINCTRL_IMX8QM=y
++CONFIG_PINCTRL_IMX8QXP=y
++CONFIG_PINCTRL_IMX8DXL=y
++CONFIG_PINCTRL_S32V234=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_DWAPB=y
++CONFIG_GPIO_MB86S7X=y
++CONFIG_GPIO_MPC8XXX=y
++CONFIG_GPIO_PL061=y
++CONFIG_GPIO_XGENE=y
++CONFIG_GPIO_MAX732X=y
++CONFIG_GPIO_PCA953X=y
++CONFIG_GPIO_PCA953X_IRQ=y
++CONFIG_GPIO_PCF857X=y
++CONFIG_GPIO_MAX77620=y
++CONFIG_POWER_AVS=y
++CONFIG_POWER_RESET_BRCMSTB=y
++CONFIG_POWER_RESET_VEXPRESS=y
++CONFIG_POWER_RESET_XGENE=y
++CONFIG_POWER_RESET_SYSCON=y
++CONFIG_SYSCON_REBOOT_MODE=y
++CONFIG_BATTERY_SBS=m
++CONFIG_BATTERY_BQ27XXX=y
++CONFIG_SENSORS_ARM_SCPI=y
++CONFIG_SENSORS_LM90=m
++CONFIG_SENSORS_PWM_FAN=m
++CONFIG_SENSORS_INA2XX=m
++CONFIG_SENSORS_INA3221=m
++CONFIG_THERMAL_WRITABLE_TRIPS=y
++CONFIG_THERMAL_GOV_POWER_ALLOCATOR=y
++CONFIG_CPU_THERMAL=y
++CONFIG_THERMAL_EMULATION=y
++CONFIG_IMX_SC_THERMAL=y
++CONFIG_DEVICE_THERMAL=y
++CONFIG_IMX8MM_THERMAL=y
++CONFIG_QORIQ_THERMAL=y
++CONFIG_WATCHDOG=y
++CONFIG_ARM_SP805_WATCHDOG=y
++CONFIG_ARM_SBSA_WATCHDOG=y
++CONFIG_DW_WATCHDOG=y
++CONFIG_IMX2_WDT=y
++CONFIG_IMX_SC_WDT=y
++CONFIG_XEN_WDT=y
++CONFIG_MFD_BD9571MWV=y
++CONFIG_MFD_AXP20X_I2C=y
++CONFIG_MFD_IMX_AUDIOMIX=y
++CONFIG_MFD_HI6421_PMIC=y
++CONFIG_MFD_MAX77620=y
++CONFIG_MFD_RK808=y
++CONFIG_MFD_SEC_CORE=y
++CONFIG_MFD_ROHM_BD718XX=y
++CONFIG_MFD_PCA9450=y
++CONFIG_REGULATOR=y
++CONFIG_REGULATOR_FIXED_VOLTAGE=y
++CONFIG_REGULATOR_AXP20X=y
++CONFIG_REGULATOR_BD718XX=y
++CONFIG_REGULATOR_BD9571MWV=y
++CONFIG_REGULATOR_FAN53555=y
++CONFIG_REGULATOR_GPIO=y
++CONFIG_REGULATOR_HI6421V530=y
++CONFIG_REGULATOR_MAX77620=y
++CONFIG_REGULATOR_MAX8973=y
++CONFIG_REGULATOR_PCA9450=y
++CONFIG_REGULATOR_PFUZE100=y
++CONFIG_REGULATOR_PWM=y
++CONFIG_REGULATOR_QCOM_SPMI=y
++CONFIG_REGULATOR_RK808=y
++CONFIG_REGULATOR_S2MPS11=y
++CONFIG_REGULATOR_VCTRL=m
++CONFIG_RC_CORE=m
++CONFIG_RC_DECODERS=y
++CONFIG_RC_DEVICES=y
++CONFIG_MEDIA_SUPPORT=y
++CONFIG_MEDIA_CAMERA_SUPPORT=y
++CONFIG_MEDIA_ANALOG_TV_SUPPORT=y
++CONFIG_MEDIA_DIGITAL_TV_SUPPORT=y
++CONFIG_MEDIA_CONTROLLER=y
++CONFIG_VIDEO_V4L2_SUBDEV_API=y
++# CONFIG_DVB_NET is not set
++CONFIG_MEDIA_USB_SUPPORT=y
++CONFIG_USB_VIDEO_CLASS=m
++CONFIG_V4L_PLATFORM_DRIVERS=y
++CONFIG_VIDEO_MX8_CAPTURE=y
++CONFIG_VIDEO_MXC_CAPTURE=y
++CONFIG_VIDEO_MXC_CSI_CAMERA=y
++CONFIG_MXC_MIPI_CSI=y
++CONFIG_MXC_CAMERA_OV5640_MIPI_V2=y
++CONFIG_V4L_MEM2MEM_DRIVERS=y
++CONFIG_VIDEO_OV5640=y
++CONFIG_VIDEO_MT9P031=y
++CONFIG_IMX_DPU_CORE=y
++CONFIG_IMX_LCDIF_CORE=y
++CONFIG_IMX_LCDIFV3_CORE=y
++CONFIG_DRM=y
++CONFIG_DRM_I2C_NXP_TDA998X=m
++CONFIG_DRM_MALI_DISPLAY=m
++CONFIG_DRM_NOUVEAU=m
++CONFIG_DRM_RCAR_LVDS=m
++CONFIG_DRM_PANEL_SIMPLE=y
++CONFIG_DRM_PANEL_RAYDIUM_RM67191=y
++CONFIG_DRM_PANEL_SEIKO_43WVF1G=y
++CONFIG_DRM_FSL_IMX_LVDS_BRIDGE=y
++CONFIG_DRM_SII902X=m
++CONFIG_DRM_I2C_ADV7511=y
++CONFIG_DRM_NWL_MIPI_DSI=y
++CONFIG_DRM_CDNS_HDMI_CEC=y
++CONFIG_DRM_DW_HDMI_I2S_AUDIO=m
++CONFIG_DRM_DW_HDMI_GP_AUDIO=y
++CONFIG_DRM_DW_HDMI_CEC=y
++CONFIG_DRM_ITE_IT6263=y
++CONFIG_DRM_IMX=y
++CONFIG_DRM_IMX_LCDIF_MUX_DISPLAY=y
++CONFIG_DRM_IMX_PARALLEL_DISPLAY=y
++CONFIG_DRM_IMX_TVE=y
++CONFIG_DRM_IMX_LDB=y
++CONFIG_DRM_IMX8QM_LDB=y
++CONFIG_DRM_IMX8QXP_LDB=y
++CONFIG_DRM_IMX8MP_LDB=y
++CONFIG_DRM_IMX_HDMI=y
++CONFIG_DRM_IMX_SEC_DSIM=y
++CONFIG_DRM_IMX_CDNS_MHDP=y
++CONFIG_DRM_IMX_DCSS=y
++CONFIG_DRM_ETNAVIV=m
++CONFIG_DRM_HISI_HIBMC=m
++CONFIG_DRM_HISI_KIRIN=m
++CONFIG_DRM_MXSFB=y
++CONFIG_DRM_PL111=m
++CONFIG_DRM_LIMA=m
++CONFIG_DRM_PANFROST=m
++CONFIG_FB_ARMCLCD=y
++CONFIG_FB_EFI=y
++CONFIG_BACKLIGHT_GENERIC=m
++CONFIG_BACKLIGHT_PWM=y
++CONFIG_BACKLIGHT_LP855X=m
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_DYNAMIC_MINORS=y
++CONFIG_SND_USB_AUDIO=m
++CONFIG_SND_SOC=y
++CONFIG_SND_SOC_FSL_DAI=m
++CONFIG_SND_SOC_FSL_EASRC=y
++CONFIG_SND_IMX_SOC=y
++CONFIG_SND_SOC_IMX_AK4458=y
++CONFIG_SND_SOC_IMX_AK5558=y
++CONFIG_SND_SOC_IMX_AK4497=y
++CONFIG_SND_SOC_IMX_WM8960=y
++CONFIG_SND_SOC_IMX_WM8524=y
++CONFIG_SND_SOC_IMX_CS42888=y
++CONFIG_SND_SOC_IMX_MICFIL=y
++CONFIG_SND_SOC_IMX_RPMSG=y
++CONFIG_SND_SOC_IMX_MQS=y
++CONFIG_SND_SOC_IMX_SPDIF=y
++CONFIG_SND_SOC_IMX_AUDMIX=y
++CONFIG_SND_SOC_IMX_PDM_MIC=y
++CONFIG_SND_SOC_IMX_DSP=y
++CONFIG_SND_SOC_IMX_CDNHDMI=y
++CONFIG_SND_SOC_IMX_XCVR=y
++CONFIG_SND_SOC_SOF_TOPLEVEL=y
++CONFIG_SND_SOC_SOF_OF=m
++CONFIG_SND_SOC_SOF_IMX_TOPLEVEL=y
++CONFIG_SND_SOC_SOF_IMX8_SUPPORT=m
++CONFIG_SND_SOC_SOF_IMX8M_SUPPORT=m
++CONFIG_SND_SOC_AK4613=m
++CONFIG_SND_SOC_BT_SCO=y
++CONFIG_SND_SOC_DMIC=m
++CONFIG_SND_SOC_ES7134=m
++CONFIG_SND_SOC_ES7241=m
++CONFIG_SND_SOC_MAX98357A=m
++CONFIG_SND_SOC_PCM3168A_I2C=m
++CONFIG_SND_SOC_SGTL5000=m
++CONFIG_SND_SOC_SPDIF=m
++CONFIG_SND_SOC_TAS571X=m
++CONFIG_SND_SIMPLE_CARD=y
++CONFIG_SND_AUDIO_GRAPH_CARD=y
++CONFIG_I2C_HID=m
++CONFIG_USB=y
++CONFIG_USB_OTG=y
++CONFIG_USB_OTG_WHITELIST=y
++CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_HCD_PLATFORM=y
++CONFIG_USB_OHCI_HCD=y
++CONFIG_USB_OHCI_HCD_PLATFORM=y
++CONFIG_USB_HCD_TEST_MODE=y
++CONFIG_USB_ACM=m
++CONFIG_USB_STORAGE=y
++CONFIG_USB_CDNS3=y
++CONFIG_USB_CDNS3_GADGET=y
++CONFIG_USB_CDNS3_HOST=y
++CONFIG_USB_MUSB_HDRC=y
++CONFIG_USB_DWC3=y
++CONFIG_USB_DWC2=y
++CONFIG_USB_CHIPIDEA=y
++CONFIG_USB_CHIPIDEA_UDC=y
++CONFIG_USB_CHIPIDEA_HOST=y
++CONFIG_USB_ISP1760=y
++CONFIG_USB_SERIAL=y
++CONFIG_USB_SERIAL_CONSOLE=y
++CONFIG_USB_SERIAL_GENERIC=y
++CONFIG_USB_SERIAL_SIMPLE=y
++CONFIG_USB_SERIAL_FTDI_SIO=y
++CONFIG_USB_TEST=m
++CONFIG_USB_EHSET_TEST_FIXTURE=m
++CONFIG_USB_HSIC_USB3503=y
++CONFIG_NOP_USB_XCEIV=y
++CONFIG_USB_MXS_PHY=y
++CONFIG_USB_ULPI=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_SNP_UDC_PLAT=y
++CONFIG_USB_BDC_UDC=y
++CONFIG_USB_CONFIGFS=y
++CONFIG_USB_CONFIGFS_SERIAL=y
++CONFIG_USB_CONFIGFS_ACM=y
++CONFIG_USB_CONFIGFS_OBEX=y
++CONFIG_USB_CONFIGFS_NCM=y
++CONFIG_USB_CONFIGFS_ECM=y
++CONFIG_USB_CONFIGFS_ECM_SUBSET=y
++CONFIG_USB_CONFIGFS_RNDIS=y
++CONFIG_USB_CONFIGFS_EEM=y
++CONFIG_USB_CONFIGFS_MASS_STORAGE=y
++CONFIG_USB_CONFIGFS_F_LB_SS=y
++CONFIG_USB_CONFIGFS_F_FS=y
++CONFIG_USB_CONFIGFS_F_UAC1=y
++CONFIG_USB_CONFIGFS_F_UAC1_LEGACY=y
++CONFIG_USB_CONFIGFS_F_UAC2=y
++CONFIG_USB_CONFIGFS_F_MIDI=y
++CONFIG_USB_CONFIGFS_F_HID=y
++CONFIG_USB_CONFIGFS_F_UVC=y
++CONFIG_USB_ZERO=m
++CONFIG_USB_AUDIO=m
++CONFIG_USB_ETH=m
++CONFIG_USB_MASS_STORAGE=m
++CONFIG_USB_G_SERIAL=m
++CONFIG_TYPEC=y
++CONFIG_TYPEC_TCPM=y
++CONFIG_TYPEC_TCPCI=y
++CONFIG_TYPEC_TPS6598X=y
++CONFIG_TYPEC_SWITCH_GPIO=y
++CONFIG_MMC=y
++CONFIG_MMC_BLOCK_MINORS=32
++CONFIG_MMC_ARMMMCI=y
++CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_ACPI=y
++CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_MMC_SDHCI_OF_ARASAN=y
++CONFIG_MMC_SDHCI_OF_ESDHC=y
++CONFIG_MMC_SDHCI_CADENCE=y
++CONFIG_MMC_SDHCI_ESDHC_IMX=y
++CONFIG_MMC_SDHCI_F_SDH30=y
++CONFIG_MMC_SPI=y
++CONFIG_MMC_DW=y
++CONFIG_MMC_DW_EXYNOS=y
++CONFIG_MMC_DW_HI3798CV200=y
++CONFIG_MMC_DW_K3=y
++CONFIG_MMC_SDHCI_XENON=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_GPIO=y
++CONFIG_LEDS_PWM=y
++CONFIG_LEDS_SYSCON=y
++CONFIG_LEDS_TRIGGER_DISK=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++CONFIG_LEDS_TRIGGER_CPU=y
++CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
++CONFIG_LEDS_TRIGGER_PANIC=y
++CONFIG_EDAC=y
++CONFIG_EDAC_GHES=y
++CONFIG_EDAC_SYNOPSYS=y
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_DS1307=y
++CONFIG_RTC_DRV_MAX77686=y
++CONFIG_RTC_DRV_RK808=m
++CONFIG_RTC_DRV_PCF85363=y
++CONFIG_RTC_DRV_RX8581=m
++CONFIG_RTC_DRV_RV3028=y
++CONFIG_RTC_DRV_S5M=y
++CONFIG_RTC_DRV_DS3232=y
++CONFIG_RTC_DRV_PCF2127=y
++CONFIG_RTC_DRV_EFI=y
++CONFIG_RTC_DRV_CROS_EC=y
++CONFIG_RTC_DRV_PL031=y
++CONFIG_RTC_DRV_SNVS=y
++CONFIG_RTC_DRV_IMX_SC=y
++CONFIG_DMADEVICES=y
++CONFIG_BCM_SBA_RAID=m
++CONFIG_FSL_EDMA=y
++CONFIG_FSL_EDMA_V3=y
++CONFIG_IMX_SDMA=y
++CONFIG_MV_XOR_V2=y
++CONFIG_MXS_DMA=y
++CONFIG_PL330_DMA=y
++CONFIG_QCOM_HIDMA_MGMT=y
++CONFIG_QCOM_HIDMA=y
++CONFIG_DMATEST=y
++CONFIG_UIO=y
++CONFIG_UIO_PCI_GENERIC=y
++CONFIG_UIO_IVSHMEM=y
++CONFIG_VFIO=y
++CONFIG_VFIO_PCI=y
++CONFIG_VFIO_FSL_MC=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BALLOON=y
++CONFIG_VIRTIO_MMIO=y
++CONFIG_XEN_GNTDEV=y
++CONFIG_XEN_GRANT_DEV_ALLOC=y
++CONFIG_STAGING=y
++CONFIG_STAGING_MEDIA=y
++CONFIG_VIDEO_IMX_CAPTURE=y
++CONFIG_ION=y
++CONFIG_ION_SYSTEM_HEAP=y
++CONFIG_ION_CMA_HEAP=y
++CONFIG_FSL_DPAA2=y
++CONFIG_FSL_DPAA2_ETHSW=y
++CONFIG_FSL_DPAA2_MAC=y
++CONFIG_FSL_SDK_DPA=y
++CONFIG_FSL_PPFE=y
++CONFIG_FSL_PPFE_UTIL_DISABLED=y
++CONFIG_MFD_CROS_EC=y
++CONFIG_CROS_EC_I2C=y
++CONFIG_CROS_EC_SPI=y
++CONFIG_COMMON_CLK_VERSATILE=y
++CONFIG_CLK_SP810=y
++CONFIG_CLK_VEXPRESS_OSC=y
++CONFIG_COMMON_CLK_RK808=y
++CONFIG_COMMON_CLK_SCPI=y
++CONFIG_COMMON_CLK_CS2000_CP=y
++CONFIG_COMMON_CLK_S2MPS11=y
++CONFIG_COMMON_CLK_XGENE=y
++CONFIG_COMMON_CLK_PWM=y
++CONFIG_CLK_IMX8MM=y
++CONFIG_CLK_IMX8MN=y
++CONFIG_CLK_IMX8MP=y
++CONFIG_CLK_IMX8MQ=y
++CONFIG_CLK_IMX8QXP=y
++CONFIG_HWSPINLOCK=y
++CONFIG_ARM_MHU=y
++CONFIG_IMX_MBOX=y
++CONFIG_PLATFORM_MHU=y
++CONFIG_ARM_SMMU=y
++CONFIG_ARM_SMMU_V3=y
++CONFIG_REMOTEPROC=y
++CONFIG_IMX_REMOTEPROC=y
++CONFIG_RPMSG_QCOM_GLINK_RPM=y
++CONFIG_SOC_BRCMSTB=y
++CONFIG_FSL_MC_DPIO=y
++CONFIG_FSL_QIXIS=y
++CONFIG_IMX_SCU_SOC=y
++CONFIG_SECVIO_SC=y
++CONFIG_SOC_TI=y
++CONFIG_EXTCON_USB_GPIO=y
++CONFIG_EXTCON_USBC_CROS_EC=y
++CONFIG_IIO=y
++CONFIG_IMX8QXP_ADC=y
++CONFIG_IIO_CROS_EC_SENSORS_CORE=m
++CONFIG_IIO_CROS_EC_SENSORS=m
++CONFIG_IIO_CROS_EC_LIGHT_PROX=m
++CONFIG_IIO_CROS_EC_BARO=m
++CONFIG_PWM=y
++CONFIG_PWM_CROS_EC=m
++CONFIG_PWM_IMX27=y
++CONFIG_PHY_XGENE=y
++CONFIG_PHY_MIXEL_LVDS=y
++CONFIG_PHY_MIXEL_LVDS_COMBO=y
++CONFIG_PHY_FSL_IMX8MP_LVDS=y
++CONFIG_PHY_MIXEL_MIPI_DPHY=y
++CONFIG_PHY_SAMSUNG_HDMI_PHY=y
++CONFIG_PHY_QCOM_USB_HS=y
++CONFIG_PHY_SAMSUNG_USB2=y
++CONFIG_FSL_IMX8_DDR_PMU=y
++CONFIG_HISI_PMU=y
++CONFIG_NVMEM_IMX_OCOTP=y
++CONFIG_NVMEM_IMX_OCOTP_SCU=y
++CONFIG_FPGA=y
++CONFIG_FPGA_BRIDGE=m
++CONFIG_ALTERA_FREEZE_BRIDGE=m
++CONFIG_FPGA_REGION=m
++CONFIG_OF_FPGA_REGION=m
++CONFIG_TEE=y
++CONFIG_OPTEE=y
++CONFIG_MUX_MMIO=y
++CONFIG_MXC_SIM=y
++CONFIG_MXC_EMVSIM=y
++CONFIG_MXC_MLB150=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_BTRFS_FS=m
++CONFIG_BTRFS_FS_POSIX_ACL=y
++CONFIG_FANOTIFY=y
++CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y
++CONFIG_QUOTA=y
++CONFIG_AUTOFS4_FS=y
++CONFIG_FUSE_FS=m
++CONFIG_CUSE=m
++CONFIG_OVERLAY_FS=m
++CONFIG_VFAT_FS=y
++CONFIG_HUGETLBFS=y
++CONFIG_EFIVAR_FS=y
++CONFIG_JFFS2_FS=y
++CONFIG_UBIFS_FS=y
++CONFIG_SQUASHFS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V4=y
++CONFIG_NFS_V4_1=y
++CONFIG_NFS_V4_2=y
++CONFIG_ROOT_NFS=y
++CONFIG_9P_FS=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_SECURITY=y
++CONFIG_CRYPTO_USER=y
++CONFIG_CRYPTO_TEST=m
++CONFIG_CRYPTO_ECDH=y
++CONFIG_CRYPTO_CCM=y
++CONFIG_CRYPTO_GCM=y
++CONFIG_CRYPTO_CHACHA20POLY1305=m
++CONFIG_CRYPTO_ECHAINIV=y
++CONFIG_CRYPTO_TLS=m
++CONFIG_CRYPTO_CBC=m
++CONFIG_CRYPTO_CFB=m
++CONFIG_CRYPTO_CTS=m
++CONFIG_CRYPTO_ECB=y
++CONFIG_CRYPTO_LRW=m
++CONFIG_CRYPTO_OFB=m
++CONFIG_CRYPTO_PCBC=m
++CONFIG_CRYPTO_XTS=m
++CONFIG_CRYPTO_CMAC=y
++CONFIG_CRYPTO_XCBC=m
++CONFIG_CRYPTO_VMAC=m
++CONFIG_CRYPTO_MD4=m
++CONFIG_CRYPTO_MD5=m
++CONFIG_CRYPTO_MICHAEL_MIC=y
++CONFIG_CRYPTO_RMD128=m
++CONFIG_CRYPTO_RMD160=m
++CONFIG_CRYPTO_RMD256=m
++CONFIG_CRYPTO_RMD320=m
++CONFIG_CRYPTO_SHA512=m
++CONFIG_CRYPTO_STREEBOG=m
++CONFIG_CRYPTO_TGR192=m
++CONFIG_CRYPTO_WP512=m
++CONFIG_CRYPTO_ANUBIS=m
++CONFIG_CRYPTO_ARC4=y
++CONFIG_CRYPTO_BLOWFISH=m
++CONFIG_CRYPTO_CAMELLIA=m
++CONFIG_CRYPTO_CAST5=m
++CONFIG_CRYPTO_CAST6=m
++CONFIG_CRYPTO_FCRYPT=m
++CONFIG_CRYPTO_KHAZAD=m
++CONFIG_CRYPTO_SALSA20=m
++CONFIG_CRYPTO_SEED=m
++CONFIG_CRYPTO_SERPENT=m
++CONFIG_CRYPTO_SM4=m
++CONFIG_CRYPTO_TEA=m
++CONFIG_CRYPTO_TWOFISH=m
++CONFIG_CRYPTO_ANSI_CPRNG=y
++CONFIG_CRYPTO_DEV_FSL_CAAM_SECVIO=y
++CONFIG_CRYPTO_DEV_FSL_CAAM=y
++CONFIG_CRYPTO_DEV_FSL_CAAM_SM=y
++CONFIG_CRYPTO_DEV_FSL_CAAM_SM_TEST=m
++CONFIG_CRYPTO_DEV_FSL_DPAA2_CAAM=y
++CONFIG_INDIRECT_PIO=y
++CONFIG_CMA_SIZE_MBYTES=320
++CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_FS=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_KERNEL=y
++# CONFIG_SCHED_DEBUG is not set
++# CONFIG_DEBUG_PREEMPT is not set
++# CONFIG_FTRACE is not set
++CONFIG_MEMTEST=y
++CONFIG_CORESIGHT=y
++CONFIG_CORESIGHT_LINK_AND_SINK_TMC=y
++CONFIG_CORESIGHT_SOURCE_ETM4X=y
+diff --git a/drivers/net/phy/dp83867.c b/drivers/net/phy/dp83867.c
+index e397e7d642d9..015bd5f1870a 100644
+--- a/drivers/net/phy/dp83867.c
++++ b/drivers/net/phy/dp83867.c
+@@ -60,6 +60,9 @@
+ #define DP83867_SW_RESET	BIT(15)
+ #define DP83867_SW_RESTART	BIT(14)
+ 
++/* PHYCTRL bits */
++#define MII_DP83867_PHYCTRL_FORCE_LINK_GOOD	BIT(10)
++
+ /* MICR Interrupt bits */
+ #define MII_DP83867_MICR_AN_ERR_INT_EN		BIT(15)
+ #define MII_DP83867_MICR_SPEED_CHNG_INT_EN	BIT(14)
+@@ -123,6 +126,7 @@
+ #define DP83867_IO_MUX_CFG_CLK_O_DISABLE	BIT(6)
+ #define DP83867_IO_MUX_CFG_CLK_O_SEL_MASK	(0x1f << 8)
+ #define DP83867_IO_MUX_CFG_CLK_O_SEL_SHIFT	8
++#define DP83867_IO_MUX_CFG_CHA_TCLK		8
+ 
+ /* PHY STS bits */
+ #define DP83867_PHYSTS_1000			BIT(15)
+@@ -159,6 +163,10 @@
+ #define DP83867_LED_DRV_EN(x)	BIT((x) * 4)
+ #define DP83867_LED_DRV_VAL(x)	BIT((x) * 4 + 1)
+ 
++/* LEDCR2 bits */
++#define DP83867_LEDCR2_LED_2_POLARITY		BIT(10)
++#define DP83867_LEDCR2_LED_0_POLARITY		BIT(2)
++
+ enum {
+ 	DP83867_PORT_MIRROING_KEEP,
+ 	DP83867_PORT_MIRROING_EN,
+@@ -176,6 +184,8 @@ struct dp83867_private {
+ 	bool set_clk_output;
+ 	u32 clk_output_sel;
+ 	bool sgmii_ref_clk_en;
++	bool led_2_active_low;
++	bool led_0_active_low;
+ };
+ 
+ static int dp83867_ack_interrupt(struct phy_device *phydev)
+@@ -639,6 +649,12 @@ static int dp83867_of_init(struct phy_device *phydev)
+ 	if (of_property_read_bool(of_node, "enet-phy-lane-no-swap"))
+ 		dp83867->port_mirroring = DP83867_PORT_MIRROING_DIS;
+ 
++	dp83867->led_0_active_low = of_property_read_bool(of_node,
++							  "ti,led-0-active-low");
++
++	dp83867->led_2_active_low = of_property_read_bool(of_node,
++							  "ti,led-2-active-low");
++
+ 	ret = of_property_read_u32(of_node, "ti,fifo-depth",
+ 				   &dp83867->tx_fifo_depth);
+ 	if (ret) {
+@@ -929,6 +945,19 @@ static int dp83867_config_init(struct phy_device *phydev)
+ 			       mask, val);
+ 	}
+ 
++	/* LED configuration */
++	if (dp83867->led_0_active_low) {
++		val = phy_read(phydev, DP83867_LEDCR2);
++		val &= ~DP83867_LEDCR2_LED_0_POLARITY;
++		phy_write(phydev, DP83867_LEDCR2, val);
++	}
++
++	if (dp83867->led_2_active_low) {
++		val = phy_read(phydev, DP83867_LEDCR2);
++		val &= ~DP83867_LEDCR2_LED_2_POLARITY;
++		phy_write(phydev, DP83867_LEDCR2, val);
++	}
++
+ 	return 0;
+ }
+ 
